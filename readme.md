@@ -3,7 +3,7 @@ This is basic a scaffolding to run php application with docker. This includes ``
 
 ## Installation
 ```
-git clone https://github.com/rushdasoftbd/php-with-docker.git my-project
+git clone https://github.com/majorsabbir/php-with-docker.git my-project
 cd my-project
 mkdir src
 ```
