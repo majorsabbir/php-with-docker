@@ -1,0 +1,92 @@
+version: '3.7'
+
+networks:
+    project-name-network:
+        driver: bridge
+
+volumes:
+    project-name-volume:
+        driver: local
+
+services:
+    nginx:
+        image: nginx:stable-alpine
+        container_name: project-name_nginx
+        ports:
+            - 80:80
+            - 443:443
+        volumes:
+            - ./src/:/var/www/html:cached
+            - ./.docker/nginx:/etc/nginx/conf.d
+            - ./.docker/nginx/ssl:/etc/nginx/conf.d/ssl
+        depends_on:
+            - app
+        networks:
+        - project-name-network
+
+    app:
+        build:
+            context: ./.docker/php
+            args:
+                - ENV=local
+            dockerfile: Dockerfile
+        container_name: project-name_app
+        restart: unless-stopped
+        volumes:
+            - ./src/:/var/www/html:cached
+            - ./.docker/php/php-fpm.ini:/usr/local/etc/php/conf.d/custom.ini
+            - ~/.ssh:/root/.ssh
+        depends_on: 
+            - mariadb
+            - redis
+        env_file: ./.env
+        networks:
+            - project-name-network
+
+    mariadb:
+        image: mariadb:10.3.23
+        container_name: project-name_mariadb
+        restart: unless-stopped
+        tty: true
+        volumes: 
+            - ./data/mysql:/var/lib/mysql
+        ports:
+            - 3306:3306
+        environment:
+            MYSQL_USER: project-name
+            MYSQL_PASSWORD: project-name
+            MYSQL_ROOT_USER: root
+            MYSQL_ROOT_PASSWORD: root
+            SERVICE_TAGS: dev
+            SERVICE_NAME: mysql
+        networks:
+            - project-name-network
+
+    redis:
+        image: redis:6.0.5
+        container_name: project-name_redis
+        restart: unless-stopped
+        tty: true
+        volumes:
+            - ./data/redis:/data
+        ports:
+            - 6379:6379
+        networks:
+            - project-name-network
+
+    phpmyadmin:
+        image: phpmyadmin/phpmyadmin
+        container_name: project-name_phpmyadmin
+        ports:
+            - "7000:80"
+        depends_on:
+            - mariadb
+        restart: always
+        links:
+            - mariadb:project-name_mariadb
+        environment:
+            PMA_HOST: mysql
+            PMA_PORT: 3306
+            PMA_ARBITRARY: 1
+        networks:
+            - project-name-network

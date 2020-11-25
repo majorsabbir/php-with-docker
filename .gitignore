@@ -1,0 +1,5 @@
+.env
+src
+data
+.docker/nginx/ssl/cert-key.pem
+.docker/nginx/ssl/cert.pem
